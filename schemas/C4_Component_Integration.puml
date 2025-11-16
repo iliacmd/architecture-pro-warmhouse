@@ -1,0 +1,22 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component diagram for Integration Service
+
+Container(device_service, "Device Service", "", "")
+SystemQueue(metric_queue, "Kafka", "Метрики устройства")
+
+Container_Boundary(c0, "Integration Service") {
+    Component(cmd_controller, "Command Controller", "", "")
+    Component(event_controller, "Event Controller", "", "")
+}
+
+System_Ext(device, "Устройство")
+
+Rel(device_service, cmd_controller, "Использует", "HTTP")
+Rel(cmd_controller, device, "Взаимодействует", "Протокол")
+Rel(device, event_controller, "Взаимодействует", "HTTP")
+Rel(event_controller, metric_queue, "Пишет метрики", "")
+Rel(event_controller, device_service, "Отвечает", "HTTP")
+
+@enduml

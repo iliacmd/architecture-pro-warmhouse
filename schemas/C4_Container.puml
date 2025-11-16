@@ -1,0 +1,55 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Диаграмма нового решения (TO BE)
+
+Person(user, "Пользователь", "Использует новую систему")
+Person(user_old, "Пользователь", "Использует старую систему")
+Person(staff, "Сотрудник", "Установка датчиков")
+	
+System_Boundary(s1, "Умный дом") {
+	Container(web_app, "Web Application", "SPA", "Веб-интерфейс")
+	Container(smart_home, "Smart Home", "", "Управление датчиками, получение температуры")
+	ContainerDb(smart_home_db, "Smart Home DB", "PostgreSQL", "Хранит данные о датчиках")
+	Container(device_service, "Device Service", "", "Управление устройствами и их типами")
+	ContainerDb(device_db, "Device DB", "", "Хранение устройств")
+	Container(tel_service, "Telemetry Service", "", "Cбор и хранение телеметрии")
+	ContainerDb(tel_db, "Telemetry DB", "", "Хранение телеметрии")
+	Container(integr_service, "Integration Service", "", "Коммуникация с устройствами")
+	Container(user_service, "User Service", "", "")
+	ContainerDb(user_db, "User DB", "", "")
+	SystemQueue(metric_queue, "Kafka", "Метрики устройства")
+}
+
+System_Ext(sensor, "Датчик")
+System_Ext(device, "Устройство")
+
+Rel_Neighbor(user, web_app, "Использует", "HTTPS")
+Rel_Neighbor(user_old, smart_home, "Использует", "HTTP")
+
+Rel(web_app, device_service, "Подключить устройство", "HTTP")
+Rel(web_app, tel_service, "Статистика устройства")
+Rel(web_app, user_service, "Использует")
+
+Rel(device_service, integr_service, "Новое устройство/Команды", "HTTP")
+Rel(device_service, metric_queue, "Пишет метрики устройства", "")
+Rel(device_service, device_db, "Запись/Чтение данных", "SQL")
+
+Rel(integr_service, device_service, "События устройства")
+Rel(integr_service, device, "Команды")
+Rel(integr_service, metric_queue, "Пишет метрики от устройства", "")
+
+Rel(tel_service, metric_queue, "Читает")
+Rel(tel_service, tel_db, "Запись/Чтение данных")
+
+Rel(user_service, user_db, "Использует")
+
+Rel(device, integr_service, "События")
+
+Rel(smart_home, sensor, "Запрос температуры", "HTTPS")
+Rel(smart_home, smart_home_db, "Запись/Чтение данных", "SQL")
+Rel(sensor, smart_home, "Регистрация", "HTTPS")
+Rel(staff, sensor, "Устанавливает")
+
+@enduml

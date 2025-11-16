@@ -1,13 +1,46 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: smarthome-postgres
-  ## тут нужно добавить настройки
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: smarthome-rabbitmq
+    restart: always
+    ports:
+      - 15672:15672
+      - 5672:5672
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smarthome-network
 
-  temperature-api:
-  ## тут нужно добавить приложение
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: smarthome-postgres
+    restart: always
+    shm_size: 128mb
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: smarthome
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d smarthome" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - smarthome-network
+    volumes:
+      - ./smart_home/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql
 
   app:
     build:
@@ -21,10 +54,100 @@ services:
         condition: service_started
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/smarthome
-      - TEMPERATURE_API_URL=http://temperature-api:8081
+      - TEMPERATURE_API_URL=http://temperature-api:8080
     ports:
       - "8080:8080"
     restart: unless-stopped
+    networks:
+      - smarthome-network
+
+  user:
+    build:
+      context: ./user
+      dockerfile: Dockerfile
+    container_name: smarthome-user-service
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/smarthome
+      - SECRET_KEY=123456
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+    networks:
+      - smarthome-network
+
+  device:
+    build:
+      context: ./device
+      dockerfile: Dockerfile
+    container_name: smarthome-device-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/device
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "8082:8080"
+    restart: unless-stopped
+    networks:
+      - smarthome-network
+
+  telemetry:
+    build:
+      context: ./telemetry
+      dockerfile: Dockerfile
+    container_name: smarthome-telemetry-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/telemetry
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "8083:8080"
+    restart: unless-stopped
+    networks:
+      - smarthome-network
+
+  integration:
+    build:
+      context: ./integration
+      dockerfile: Dockerfile
+    container_name: smarthome-integration-service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      temperature-api:
+        condition: service_started
+    environment:
+      - TEMPERATURE_API_URL=http://temperature-api:8080
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "8084:8080"
+    restart: unless-stopped
+    networks:
+      - smarthome-network
+
+  temperature-api:
+    build:
+      context: ./temperature-api
+      dockerfile: Dockerfile
+    container_name: smarthome-temperature-api
+    restart: always
+    ports:
+      - "8089:8080"
+    networks:
+      - smarthome-network
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 15432:8080
     networks:
       - smarthome-network
 

@@ -1,0 +1,21 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component diagram for Telemetry Service
+
+Container(web_app, "Web Application", "SPA", "Веб-интерфейс")
+ContainerDb(tel_db, "Telemetry DB", "", "Хранение")
+SystemQueue(device_events, "Kafka", "события устройств")
+
+
+Container_Boundary(c0, "Telemetry Service") {
+    Component(stat_controller, "Statistic Controller", "", "")
+    Component(tel, "Telemetry", "", "")
+}
+
+Rel(web_app, stat_controller, "Использует", "HTTP")
+Rel(tel, device_events, "События устройства", "Kafka")
+Rel(stat_controller, tel_db, "Чтение", "SQL")
+Rel(tel, tel_db, "Запись", "SQL")
+
+@enduml

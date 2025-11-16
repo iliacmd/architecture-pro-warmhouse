@@ -1,0 +1,23 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Диаграмма текущего решения (AS IS)
+
+Person(user, "Пользователь", "Использует систему SmartHome")
+
+Enterprise_Boundary(c0, "Теплый дом") {
+	Person(staff, "Сотрудник", "Установка датчиков")
+
+    System(smart_home, "Умный дом", "Управление датчиками, получение температуры")
+}
+
+System_Ext(sensor, "Датчик")
+
+Rel_Neighbor(user, smart_home, "Использует", "HTTPS")
+
+Rel(smart_home, sensor, "Запрос температуры", "HTTP")
+Rel(sensor, smart_home, "Регистрация", "HTTP")
+Rel(staff, sensor, "Устанавливает")
+
+@enduml

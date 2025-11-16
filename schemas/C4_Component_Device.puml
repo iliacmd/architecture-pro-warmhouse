@@ -1,0 +1,34 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component diagram for Device Service
+
+Container(web_app, "Web Application", "SPA", "Веб-интерфейс")
+Container(integr_service, "Integration Service", "", "Коммуникация с устройствами")
+ContainerDb(device_db, "Device DB", "", "Хранение устройств")
+SystemQueue(event_queue, "Kafka", "События устройства")
+
+Container_Boundary(c0, "Device Service") {
+    Component(device_controller, "Device Controller", "Restfull", "")
+    Component(cmd_controller, "Command Controller", "Restfull", "")
+    Component(device_repository, "Repository", "", "")
+    Component(device_service, "Device Service", "", "")
+    Component(cmd_service, "Command Service", "", "")
+    Component(device_register, "Register", "", "")
+    Component(device_discovery, "Discovery", "", "")
+}
+
+Rel(web_app, device_controller, "Регистрация и подклбючение", "HTTP")
+Rel(web_app, cmd_controller, "Команды устройствам", "HTTP")
+Rel(device_controller, device_service, "Использует", "")
+Rel(cmd_controller, cmd_service, "Использует", "")
+Rel(device_service, device_register, "Предоставляет", "")
+Rel(device_service, device_discovery, "Предоставляет", "")
+Rel(device_discovery, integr_service, "Использует", "")
+Rel(device_register, integr_service, "Использует", "")
+Rel(device_service, device_repository, "Использует", "")
+Rel(cmd_service, device_repository, "Использует", "")
+Rel(cmd_service, integr_service, "Использует", "")
+Rel(device_service, event_queue, "События", "")
+Rel(device_repository, device_db, "Чтение/Запись", "SQL")
+@enduml

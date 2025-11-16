@@ -1,0 +1,24 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component diagram for User Service
+
+Container(web_app, "Web Application", "SPA", "Веб-интерфейс")
+ContainerDb(user_db, "User DB", "", "Хранение")
+
+Container_Boundary(c0, "User Service") {
+    Component(user_controller, "User Controller", "", "")
+    Component(user_repository, "Repository", "", "")
+    Component(user_service, "Service", "", "")
+    Component(user_register, "Register", "", "")
+    Component(user_login, "Login", "", "")
+}
+
+Rel(web_app, user_controller, "Использует", "HTTP")
+Rel(user_controller, user_service, "Использует", "")
+Rel(user_service, user_register, "Предоставляет", "")
+Rel(user_service, user_login, "Предоставляет", "")
+Rel(user_service, user_repository, "Использует", "")
+Rel(user_repository, user_db, "Чтение/Запись", "SQL")
+
+@enduml

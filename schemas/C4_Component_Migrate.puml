@@ -1,0 +1,18 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component diagram for Migrate Service
+
+Container(device_service, "Device Service", "", "")
+SystemQueue(metric_queue, "Kafka", "Метрики устройства")
+SystemQueue(req_queue, "RMQ", "Очередь запросов")
+
+Container_Boundary(c0, "Migrate Service") {
+    Component(req_handler, "Request Handler", "", "")
+}
+
+Rel(req_handler, req_queue, "Читает", "")
+Rel(req_handler, device_service, "Использует", "")
+Rel(req_handler, metric_queue, "Пишет метрики", "")
+
+@enduml
